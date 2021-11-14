@@ -1,10 +1,10 @@
 import os
 from flask import Flask, jsonify, request
 from flask_debugtoolbar import DebugToolbarExtension
-# from sqlalchemy.exc import IntegrityError
-# from werkzeug.exceptions import Unauthorized
+from flask_jwt_extended import create_access_token, JWTManager, jwt_required
+from sqlalchemy.exc import IntegrityError
 
-from models import db, connect_db, Listing
+from models import db, connect_db, User, Listing
 from flask_cors import CORS
 from handle_image import create_presigned_url
 
@@ -15,32 +15,112 @@ dotenv.load_dotenv()
 
 s3 = boto3.client('s3')
 
-
 BUCKET = os.environ['BUCKET']
 
 app = Flask(__name__)
 CORS(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///sharebnb'
+app.config['SQLALCHEMY_DATABASE_URI'] = (os.environ['DATABASE_URL'].replace("postgres://", "postgresql://"))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-# app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET_KEY']
+
+jwt = JWTManager(app)
 
 connect_db(app)
 
-app.config['SECRET_KEY'] = "secret"
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 debug = DebugToolbarExtension(app)
 
 db.create_all()
 
 ##############################################################################
+# User signup/login/logout
+
+def do_login(user):
+    """Log in user, 
+       Return { token }"""
+
+    access_token = create_access_token(identity=user)
+    return jsonify(token=access_token)
+
+@app.route('/signup', methods=["GET", "POST"])
+def signup():
+    """Signup user, create new user and add to DB. 
+    If username is unique (hasn't been taken) Return { token } 
+    else Return { errors: ["Username is already taken"] }"""
+    data = request.form
+
+    try:
+        user = User.signup(
+                username=data["username"],
+                password=data["password"],
+                email=data["email"],
+                first_name=data["firstName"],
+                last_name=data["lastName"],
+                bio=data["bio"],
+                location=data["location"]
+            )
+
+        db.session.commit()
+
+        return do_login(user)
+
+    except IntegrityError:
+        return (jsonify(errors=["Username is already taken"]), 400)
+
+@app.post('/login')
+def login_user():
+    """Authenticates user login
+       if authenticated Return { token }
+       else Return { error }"""
+
+    username = request.json["username"]
+    password = request.json["password"]
+
+    is_user = User.authenticate(username, password)
+
+    if is_user: 
+        return do_login(is_user)
+    
+    return (jsonify(errors=["Invalid username or password"]), 401)
+
+@app.route('/users/<username>')
+@jwt_required
+def get_user(username):
+    """Show user details
+        Return { username,
+                 email,
+                 first_name,
+                 last_name,
+                 bio,
+                 location,
+                 is_admin
+            }"""
+
+    user = User.query.get_or_404(username)
+    serialize = user.serialize()
+
+    return (jsonify(user=serialize), 200)
+
+@app.post('/users/<username>/delete')
+@jwt_required
+def delete_user(username):
+    """Delete user, if there is a username.
+        Return { success }"""
+    user = User.query.get_or_404(username)
+    db.session.delete(user)
+    db.session.commit()
+    return (jsonify(deleted="success"), 201)
+
+##############################################################################
 # Listing Routes
 
 @app.get("/listings")
 def show_listings():
-    """Show all current listings"""
+    """Show all or specific locations of current listings"""
     
     searchTerm = request.args.get('location')
     
@@ -53,8 +133,7 @@ def show_listings():
 @app.get("/listings/<int:listing_id>")
 def get_listing(listing_id):
     """Get a specific listing
-    Return {id, name, image, price, description, location}
-    """
+    Return { id, name, image, price, description, location }"""
 
     listing = Listing.query.get_or_404(listing_id)
 
@@ -64,10 +143,8 @@ def get_listing(listing_id):
 
 @app.post('/listings')
 def create_listing():
-    """
-    Adding a new listing to our database
-    Return {listing: {id, name, image, price, description, location}}
-    """
+    """Add a new listing to the database
+    Return {listing: {id, name, image, price, description, location}}"""
 
     data = request.form
     file = request.files['image']
@@ -77,6 +154,7 @@ def create_listing():
 
     new_listing = Listing(
         name = data['name'],
+        address = data['address'],
         image = url_path,
         price = data['price'],
         description = data['description'], 
@@ -87,20 +165,18 @@ def create_listing():
     db.session.commit()
 
     serialized = new_listing.serialize()
-    # Return w/status code 201 --- return tuple (json, status)
     return (jsonify(listing=serialized), 201)
 
 @app.patch('/listings/<int:listing_id>')
 def update_listing(listing_id):
-    """
-    Update an existing listing.
-    Return {listing: {id, name, image, price, description, location}}
-    """
+    """Update an existing listing.
+    Return {listing: {id, name, image, price, description, location}}"""
 
     listing = Listing.query.get_or_404(listing_id)
 
-    listing.price = request.json["price"]
+    listing.address = request.json["address"]
     listing.image = request.json["image"]
+    listing.price = request.json["price"]
     listing.description = request.json["description"]
 
     db.session.commit()
@@ -117,7 +193,5 @@ def delete_listing(listing_id):
 
     db.session.delete(listing)
     db.session.commit()
-
-    # serialized = listing.serialize()
 
     return jsonify(deleted=listing_id)
