@@ -3,13 +3,13 @@
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 
-import boto3
-s3 = boto3.client('s3')
+# import boto3
+# s3 = boto3.client('s3')
 
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 
-DEFAULT_IMAGE = "https://st4.depositphotos.com/14953852/24787/v/600/depositphotos_247872612-stock-illustration-no-image-available-icon-vector.jpg"
+DEFAULT_IMAGE = "https://sharebnb-dnd.s3.us-east-2.amazonaws.com/defaultImage.png"
 
 class User(db.Model):
     """User Model"""
@@ -19,6 +19,7 @@ class User(db.Model):
     username = db.Column(
         db.String(length=50),
         primary_key=True,
+        unique=True,
     )
 
     password = db.Column(
@@ -60,13 +61,13 @@ class User(db.Model):
 
     listings_created = db.relationship(
         "Listing",
-        foreign_keys="Listings.created",
+        foreign_keys="Listing.created",
         backref="creator"
     )
 
     listings_rented = db.relationship(
         "Listing",
-        foreign_keys="Listings.rented",
+        foreign_keys="Listing.rented",
         backref="renter"
     )
 
@@ -194,7 +195,7 @@ class Listing(db.Model):
     )
 
     @classmethod
-    def findListings(cls, searchTerm):
+    def findListings(cls, searchTerm=False):
         """Find all current listings"""
         
         if searchTerm:
@@ -204,14 +205,14 @@ class Listing(db.Model):
         return listings
 
 
-    @classmethod
-    def generate_url(cls, file_name):
-        """Generate url for image in database"""
+    # @classmethod
+    # def generate_url(cls, file_name):
+    #     """Generate url for image in database"""
 
-        response = s3.create_presigned_url("BUCKET",file_name, expiration=None)
+    #     response = s3.create_presigned_url("BUCKET",file_name, expiration=None)
 
-        print("response from")
-        return response 
+    #     print("response from")
+    #     return response 
 
 
     def serialize(self):

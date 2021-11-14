@@ -19,7 +19,7 @@ itsdangerous==2.0.1
 Jinja2==3.0.2
 jmespath==0.10.0
 MarkupSafe==2.0.1
-psycopg2==2.9.1
+psycopg2==2.9.2
 psycopg2-binary==2.9.1
 pycparser==2.20
 PyJWT==2.3.0

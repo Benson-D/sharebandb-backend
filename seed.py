@@ -1,17 +1,17 @@
-from models import User, db, Listing
-# from app import app
+from models import User, Listing
+from app import db
 
 db.drop_all()
 db.create_all()
 
 user_one = User(
-    username="test_user",
+    username="test-user",
     password="$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q",
     email="test@gmail.com",
     first_name="Test",
     last_name="User",
     bio="This is the test bio of a user",
-    location="Chicago IL",
+    location="Chicago, IL",
     is_admin=True
 )
 
@@ -22,7 +22,7 @@ l1 = Listing(
     price=100,
     description="Cozy apartment that features 2 bedrooms, living room, and 1 bathroom",
     location="Chicago IL",
-    created="test_user"
+    created=user_one.username
 )
 
 l2 = Listing(
@@ -32,8 +32,9 @@ l2 = Listing(
     price=200,
     description="Cozy apartment that features 1 bedroom, living room, and 1 bathroom",
     location="Chicago IL",
-    created="test_user"
+    created=user_one.username
 )
+
 l3 = Listing(
     name="CHICAGO O’HARE HARLEM BLUE LINE",
     address="test123 st",
@@ -41,7 +42,7 @@ l3 = Listing(
     price=200,
     description="Cozy house that features 3 bedrooms, living room, and 3 bathrooms",
     location="San Francisco CA",
-    created="test_user"
+    created=user_one.username
 )
 
 l4 = Listing(
@@ -51,7 +52,7 @@ l4 = Listing(
     price=200,
     description="Cozy house that features 3 bedrooms, living room, and 3 bathrooms",
     location="San Francisco CA",
-    created="test_user"
+    created=user_one.username
 )
 
 l5 = Listing(
@@ -61,7 +62,7 @@ l5 = Listing(
     price=200,
     description="Cozy house that features 3 bedrooms, living room, and 3 bathrooms",
     location="Chicago IL",
-    created="test_user"
+    created=user_one.username
 )
 
 l6 = Listing(
@@ -71,7 +72,7 @@ l6 = Listing(
     price=200,
     description="Cozy house that features 3 bedrooms, living room, and 3 bathrooms",
     location="Chicago IL",
-    created="test_user"
+    created=user_one.username
 )
 
 
