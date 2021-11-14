@@ -1,10 +1,11 @@
 import os
 from flask import Flask, jsonify, request
 from flask_debugtoolbar import DebugToolbarExtension
-from flask_jwt_extended import create_access_token, JWTManager, jwt_required
+from flask_jwt_extended import create_access_token, JWTManager
+#jwt_required, get_jwt_identity
 from sqlalchemy.exc import IntegrityError
 
-from models import db, connect_db, User, Listing
+from models import db, connect_db, Listing, User
 from flask_cors import CORS
 from handle_image import create_presigned_url
 
@@ -12,6 +13,8 @@ import boto3
 
 import dotenv
 dotenv.load_dotenv()
+
+CURR_USER_KEY = "curr_user"
 
 s3 = boto3.client('s3')
 
@@ -34,7 +37,19 @@ connect_db(app)
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 debug = DebugToolbarExtension(app)
 
-db.create_all()
+##############################################################################
+# JWT 
+
+
+# @app.get("/protected")
+# @jwt_required
+# def protected():
+#     """Protect a route with jwt_required, which will kick out requests without a valid JWT present."""
+
+#     # Access the identity of the current user with get_jwt_identity
+#     current_user = get_jwt_identity()
+#     return (jsonify(logged_in_as=current_user), 200)
+
 
 ##############################################################################
 # User signup/login/logout
@@ -87,8 +102,8 @@ def login_user():
     
     return (jsonify(errors=["Invalid username or password"]), 401)
 
-@app.route('/users/<username>')
-@jwt_required
+@app.get('/users/<username>')
+# @jwt_required
 def get_user(username):
     """Show user details
         Return { username,
@@ -106,10 +121,11 @@ def get_user(username):
     return (jsonify(user=serialize), 200)
 
 @app.post('/users/<username>/delete')
-@jwt_required
+# @jwt_required
 def delete_user(username):
     """Delete user, if there is a username.
         Return { success }"""
+
     user = User.query.get_or_404(username)
     db.session.delete(user)
     db.session.commit()
