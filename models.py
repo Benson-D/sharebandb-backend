@@ -154,6 +154,11 @@ class Listing(db.Model):
         nullable = False,
     )
 
+    address = db.Column(
+        db.Text,
+        nullable = False,
+    )
+
     image = db.Column(
         db.Text, 
         nullable = False,
@@ -215,6 +220,7 @@ class Listing(db.Model):
         return {
             "id": self.id,
             "name": self.name,
+            "address": self.address,
             "image": self.image,
             "price": str(self.price),
             "description": self.description,
