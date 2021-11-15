@@ -3,8 +3,6 @@
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 
-# import boto3
-# s3 = boto3.client('s3')
 
 bcrypt = Bcrypt()
 db = SQLAlchemy()
@@ -203,16 +201,6 @@ class Listing(db.Model):
         else:    
             listings = cls.query.all() 
         return listings
-
-
-    # @classmethod
-    # def generate_url(cls, file_name):
-    #     """Generate url for image in database"""
-
-    #     response = s3.create_presigned_url("BUCKET",file_name, expiration=None)
-
-    #     print("response from")
-    #     return response 
 
 
     def serialize(self):
