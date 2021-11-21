@@ -37,6 +37,27 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 debug = DebugToolbarExtension(app)
 
 ##############################################################################
+# JWT 
+
+# Function takes in the object that we're creating a token for, adds 
+# additional claims to the JWT.
+# Returns { username: "test_user"}
+
+@jwt.additional_claims_loader
+def add_claims_to_access_token(user):
+    return {
+         "username": user.username
+    }
+
+# Function takes in a object when creating JWTs, 
+# converts it to a JSON serializable format.
+# Returns "test_user"
+
+@jwt.user_identity_loader
+def user_identity_lookup(user):
+    return user.username
+
+##############################################################################
 # User signup/login/logout
 
 def do_login(user):
@@ -66,8 +87,7 @@ def signup():
 
         db.session.commit()
 
-        serialize = User.serialize(user)
-        return do_login(serialize)
+        return do_login(user)
 
     except IntegrityError:
         return (jsonify(errors=["Username is already taken"]), 400)
@@ -84,8 +104,7 @@ def login_user():
     is_user = User.authenticate(username, password)
 
     if is_user: 
-        serialize = User.serialize(is_user)
-        return do_login(serialize)
+        return do_login(is_user)
 
     return (jsonify(errors=["Invalid username or password"]), 401)
 
