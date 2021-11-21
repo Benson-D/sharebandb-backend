@@ -44,29 +44,31 @@ def do_login(user):
        Return { token }"""
 
     access_token = create_access_token(identity=user)
-    return jsonify(token=access_token)
 
-@app.route('/signup', methods=["GET", "POST"])
+    return (jsonify(token=access_token), 200)
+
+@app.post('/signup')
 def signup():
     """Signup user, create new user and add to DB. 
     If username is unique (hasn't been taken) Return { token } 
     else Return { errors: ["Username is already taken"] }"""
-    data = request.form
+    data = request.json
 
     try:
         user = User.signup(
                 username=data["username"],
                 password=data["password"],
                 email=data["email"],
-                first_name=data["firstName"],
-                last_name=data["lastName"],
+                first_name=data["first_name"],
+                last_name=data["last_name"],
                 bio=data["bio"],
                 location=data["location"]
             )
 
         db.session.commit()
 
-        return do_login(user)
+        serialize = User.serialize(user)
+        return do_login(serialize)
 
     except IntegrityError:
         return (jsonify(errors=["Username is already taken"]), 400)
@@ -83,13 +85,14 @@ def login_user():
     is_user = User.authenticate(username, password)
 
     if is_user: 
-        return do_login(is_user)
-    
+        serialize = User.serialize(is_user)
+        return do_login(serialize)
+
     return (jsonify(errors=["Invalid username or password"]), 401)
 
 @app.get('/users')
 @jwt_required()
-def get_user(username):
+def get_user():
     """Show user details
         Return { username,
                  email,
@@ -98,25 +101,27 @@ def get_user(username):
                  bio,
                  location,
                  is_admin
-            }"""
+        }"""
 
     current_user = get_jwt_identity()
-    user = User.query.get_or_404(current_user.username)
-    serialize = user.serialize()
+    
+    if current_user:
+        return (jsonify(user=current_user), 200)
 
-    return (jsonify(user=serialize), 200)
-
-@app.post('/users/delete')
+@app.delete('/users/<username>/delete')
 @jwt_required()
-def delete_user():
+def delete_user(username):
     """Delete user, if there is a username.
         Return { success }"""
 
     current_user = get_jwt_identity()
-    user = User.query.get_or_404(current_user.username)
-    db.session.delete(user)
-    db.session.commit()
-    return (jsonify(deleted="success"), 201)
+
+    if current_user:
+        user = User.query.get_or_404(username)
+
+        db.session.delete(user)
+        db.session.commit()
+        return (jsonify(deleted="success"), 201)
 
 ##############################################################################
 # Listing Routes
