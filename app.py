@@ -1,7 +1,7 @@
 import os
 from flask import Flask, jsonify, request
 from flask_debugtoolbar import DebugToolbarExtension
-from flask_jwt_extended import create_access_token, JWTManager, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, JWTManager, jwt_required
 from sqlalchemy.exc import IntegrityError
 
 from models import db, connect_db, Listing, User
@@ -61,7 +61,6 @@ def signup():
                 email=data["email"],
                 first_name=data["first_name"],
                 last_name=data["last_name"],
-                bio=data["bio"],
                 location=data["location"]
             )
 
@@ -90,9 +89,9 @@ def login_user():
 
     return (jsonify(errors=["Invalid username or password"]), 401)
 
-@app.get('/users')
+@app.get('/users/<username>')
 @jwt_required()
-def get_user():
+def get_user(username):
     """Show user details
         Return { username,
                  email,
@@ -103,10 +102,10 @@ def get_user():
                  is_admin
         }"""
 
-    current_user = get_jwt_identity()
+    user = User.query.get_or_404(username)
+    serialize = User.serialize(user)
     
-    if current_user:
-        return (jsonify(user=current_user), 200)
+    return (jsonify(user=serialize), 200)
 
 @app.delete('/users/<username>/delete')
 @jwt_required()
@@ -114,14 +113,11 @@ def delete_user(username):
     """Delete user, if there is a username.
         Return { success }"""
 
-    current_user = get_jwt_identity()
+    user = User.query.get_or_404(username)
 
-    if current_user:
-        user = User.query.get_or_404(username)
-
-        db.session.delete(user)
-        db.session.commit()
-        return (jsonify(deleted="success"), 201)
+    db.session.delete(user)
+    db.session.commit()
+    return (jsonify(deleted="success"), 201)
 
 ##############################################################################
 # Listing Routes

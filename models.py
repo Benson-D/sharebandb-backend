@@ -73,7 +73,7 @@ class User(db.Model):
         return f"<User #{self.username}, {self.first_name} {self.last_name}>"
 
     @classmethod
-    def signup(cls, username, password, email, first_name, last_name, bio, location):
+    def signup(cls, username, password, email, first_name, last_name, location):
         """Sign up user.
 
         Hashes password and adds user to system.
@@ -87,7 +87,6 @@ class User(db.Model):
             email=email,
             first_name=first_name,
             last_name=last_name,
-            bio=bio,
             location=location,
         )
 
