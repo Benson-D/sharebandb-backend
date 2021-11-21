@@ -22,7 +22,8 @@ BUCKET = os.environ['BUCKET']
 app = Flask(__name__)
 CORS(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = (os.environ['DATABASE_URL'].replace("postgres://", "postgresql://"))
+app.config['SQLALCHEMY_DATABASE_URI'] = (os.environ['DATABASE_URL']
+    .replace("postgres://", "postgresql://"))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
@@ -172,7 +173,8 @@ def create_listing():
     data = request.form
     file = request.files['image']
 
-    s3.upload_fileobj(file, BUCKET, file.filename, ExtraArgs={"ACL":"public-read"} )
+    s3.upload_fileobj(
+        file, BUCKET, file.filename, ExtraArgs={"ACL":"public-read"} )
     url_path = create_presigned_url( BUCKET, file.filename,)
 
     new_listing = Listing(
