@@ -166,6 +166,7 @@ def get_listing(listing_id):
     return jsonify(listing=serialized)
 
 @app.post('/listings')
+@jwt_required()
 def create_listing():
     """Add a new listing to the database
     Return {listing: {id, name, image, price, description, location}}"""
@@ -183,7 +184,8 @@ def create_listing():
         image = url_path,
         price = data['price'],
         description = data['description'], 
-        location = data['location']
+        location = data['location'],
+        created = data['created']
     )
     
     db.session.add(new_listing)
