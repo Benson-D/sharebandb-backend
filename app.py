@@ -66,7 +66,7 @@ def do_login(user):
        Return { token }"""
 
     access_token = create_access_token(identity=user)
-
+    
     return (jsonify(token=access_token), 200)
 
 @app.post('/signup')
@@ -143,6 +143,7 @@ def delete_user(username):
 # Listing Routes
 
 @app.get("/listings")
+@jwt_required()
 def show_listings():
     """Show all or specific locations of current listings"""
     
@@ -155,6 +156,7 @@ def show_listings():
     return jsonify(listings=serialized)
 
 @app.get("/listings/<int:listing_id>")
+@jwt_required()
 def get_listing(listing_id):
     """Get a specific listing
     Return { id, name, image, price, description, location }"""
@@ -195,6 +197,7 @@ def create_listing():
     return (jsonify(listing=serialized), 201)
 
 @app.patch('/listings/<int:listing_id>')
+@jwt_required()
 def update_listing(listing_id):
     """Update an existing listing.
     Return {listing: {id, name, image, price, description, location}}"""
@@ -213,6 +216,7 @@ def update_listing(listing_id):
     return jsonify(listing=serialized)
 
 @app.delete('/listings/<int:listing_id>')
+@jwt_required()
 def delete_listing(listing_id):
     """Delete a listing. Return {deleted: [listing-id]}"""
 

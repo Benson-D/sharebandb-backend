@@ -1,5 +1,7 @@
 """SQL models for sharebnb"""
 
+from datetime import datetime
+
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 
@@ -60,13 +62,25 @@ class User(db.Model):
     listings_created = db.relationship(
         "Listing",
         foreign_keys="Listing.created",
-        backref="creator"
+        backref="user_created"
     )
 
     listings_rented = db.relationship(
         "Listing",
         foreign_keys="Listing.rented",
-        backref="renter"
+        backref="user_rented"
+    )
+
+    sent_message = db.relationship(
+        "Message",
+        foreign_keys="Message.from_user",
+        backref="user_sent"
+    )
+
+    received_message = db.relationship(
+        "Message",
+        foreign_keys="Message.to_user",
+        backref="user_received"
     )
 
     def __repr__(self):
@@ -191,6 +205,10 @@ class Listing(db.Model):
         db.ForeignKey('users.username', ondelete='CASCADE'),
     )
 
+    messages_sent = db.relationship('Message',
+                                    foreign_keys="Message.listing_id",
+                                    backref="listing")
+
     @classmethod
     def findListings(cls, searchTerm=False):
         """Find all current listings"""
@@ -200,7 +218,6 @@ class Listing(db.Model):
         else:    
             listings = cls.query.all() 
         return listings
-
 
     def serialize(self):
         """Serialize to dictionary."""
@@ -212,7 +229,65 @@ class Listing(db.Model):
             "image": self.image,
             "price": str(self.price),
             "description": self.description,
-            "location": self.location
+            "location": self.location,
+            "created": self.created,
+            "rented": self.rented
+        }
+
+class Message(db.Model):
+    """Message Model"""
+
+    __tablename__ = 'messages'
+
+    id = db.Column(
+        db.Integer, 
+        primary_key = True,
+        autoincrement = True
+    )
+
+    text = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    sent_time = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow(),
+    )
+
+    to_user = db.Column(
+        db.Text,
+        db.ForeignKey('users.username', ondelete='CASCADE'),
+        primary_key = True,
+        nullable=False
+    )
+
+    from_user = db.Column(
+        db.Text,
+        db.ForeignKey('users.username', ondelete='CASCADE'),
+        primary_key = True,
+        nullable=False
+    )
+
+    listing_id = db.Column(
+        db.Integer,
+        db.ForeignKey('listings.id', ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    def __repr__(self):
+        return f"""<Message #{self.id}, {self.to_user}, {self.from_user}>"""
+
+    def serialize(self):
+        """Serialize Message Object to dictionary"""
+
+        return {
+            "text": self.text,
+            "from_user": self.from_user,
+            "to_user": self.to_user,
+            "sent_at": self.sent_at,
+            "listing_id": self.listing_id,
         }
 
 def connect_db(app):
