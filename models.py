@@ -1,15 +1,29 @@
 """SQL models for sharebnb"""
+import os
 
 from datetime import datetime
 
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 
+from werkzeug.utils import secure_filename
+
+import boto3
+
+import dotenv
+dotenv.load_dotenv()
+
+CURR_USER_KEY = "curr_user"
+
+s3 = boto3.client('s3')
+
+BUCKET = os.environ['BUCKET']
 
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 
 DEFAULT_IMAGE = "https://sharebnb-dnd.s3.us-east-2.amazonaws.com/defaultImage.png"
+IMAGE_URL = "https://sharebnb-dnd.s3.us-east-2.amazonaws.com"
 
 class User(db.Model):
     """User Model"""
@@ -210,7 +224,7 @@ class Listing(db.Model):
                                     backref="listing")
 
     @classmethod
-    def findListings(cls, searchTerm=False):
+    def find_listings(cls, searchTerm=False):
         """Find all current listings"""
         
         if searchTerm:
@@ -218,6 +232,29 @@ class Listing(db.Model):
         else:    
             listings = cls.query.all() 
         return listings
+
+    @classmethod
+    def create_listing(cls, data, image):
+        """Create a new listing"""
+
+        filename = secure_filename(image.filename)
+
+        s3.upload_fileobj(
+        image, BUCKET, image.filename, ExtraArgs={"ACL":"public-read"} )
+
+        new_listing = Listing(
+            name = data['name'],
+            address = data['address'],
+            image = f"{IMAGE_URL}/{filename}",
+            price = data['price'],
+            description = data['description'], 
+            location = data['location'],
+            created = data['created']
+        )
+    
+        db.session.add(new_listing)
+
+        return new_listing
 
     def serialize(self):
         """Serialize to dictionary."""

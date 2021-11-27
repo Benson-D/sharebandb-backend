@@ -1,12 +1,13 @@
 import os
+
 from flask import Flask, jsonify, request
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_jwt_extended import create_access_token, JWTManager, jwt_required
+
 from sqlalchemy.exc import IntegrityError
 
 from models import db, connect_db, Listing, User
 from flask_cors import CORS
-from handle_image import create_presigned_url
 
 import boto3
 
@@ -28,6 +29,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET_KEY']
 
 jwt = JWTManager(app)
@@ -149,7 +151,7 @@ def show_listings():
     
     searchTerm = request.args.get('location')
     
-    listings = Listing.findListings(searchTerm)
+    listings = Listing.find_listings(searchTerm)
 
     serialized = [listing.serialize() for listing in listings]
 
@@ -169,28 +171,25 @@ def get_listing(listing_id):
 
 @app.post('/listings')
 @jwt_required()
-def create_listing():
+def add_listing():
     """Add a new listing to the database
-    Return {listing: {id, name, image, price, description, location}}"""
+    Return { listing: 
+                    {   id, 
+                        name, 
+                        address, 
+                        image, price, 
+                        description, 
+                        location, 
+                        created, 
+                        rented
+                    }
+            }"""
 
     data = request.form
-    file = request.files['image']
+    image = request.files['image']
 
-    s3.upload_fileobj(
-        file, BUCKET, file.filename, ExtraArgs={"ACL":"public-read"} )
-    url_path = create_presigned_url( BUCKET, file.filename,)
+    new_listing = Listing.create_listing(data, image)
 
-    new_listing = Listing(
-        name = data['name'],
-        address = data['address'],
-        image = url_path,
-        price = data['price'],
-        description = data['description'], 
-        location = data['location'],
-        created = data['created']
-    )
-    
-    db.session.add(new_listing)
     db.session.commit()
 
     serialized = new_listing.serialize()
