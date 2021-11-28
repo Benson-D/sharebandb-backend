@@ -110,7 +110,7 @@ l8 = Listing(
 
 message = Message(
     text="Hello new user!",
-    sent_time=datetime.now(),
+    time_sent=datetime.now(),
     to_user=user_two.username,
     from_user=user_one.username,
     listing_id=l8.id

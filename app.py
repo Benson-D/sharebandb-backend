@@ -63,11 +63,14 @@ def do_login(user):
     
     return (jsonify(token=access_token), 200)
 
-@app.post('/signup')
+@app.post("/signup")
 def signup():
     """Signup user, create new user and add to DB. 
-    If username is unique (hasn't been taken) Return { token } 
-    else Return { errors: ["Username is already taken"] }"""
+        If username is unique (hasn't been taken) 
+            Return { token } 
+        else 
+            Return { errors: ["Username is already taken"] }"""
+
     data = request.json
 
     try:
@@ -87,11 +90,13 @@ def signup():
     except IntegrityError:
         return (jsonify(errors=["Username is already taken"]), 400)
 
-@app.post('/login')
+@app.post("/login")
 def login_user():
     """Authenticates user login
-       if authenticated Return { token }
-       else Return { error }"""
+        if authenticated 
+            Return { token }
+        else 
+            Return { error: ["Invalid username or password"] }"""
 
     username = request.json["username"]
     password = request.json["password"]
@@ -103,7 +108,7 @@ def login_user():
 
     return (jsonify(errors=["Invalid username or password"]), 401)
 
-@app.get('/users/<username>')
+@app.get("/users/<username>")
 @jwt_required()
 def get_user(username):
     """Show user details
@@ -114,14 +119,14 @@ def get_user(username):
                  bio,
                  location,
                  is_admin
-        }"""
+                }"""
 
     user = User.query.get_or_404(username)
     serialize = User.serialize(user)
     
     return (jsonify(user=serialize), 200)
 
-@app.delete('/users/<username>/delete')
+@app.delete("/users/<username>/delete")
 @jwt_required()
 def delete_user(username):
     """Delete user, if there is a username.
@@ -139,7 +144,8 @@ def delete_user(username):
 @app.get("/listings")
 @jwt_required()
 def show_listings():
-    """Show all or specific locations of current listings"""
+    """Show all or specific locations of current listings
+    Return { listing, listing, listing... }"""
     
     searchTerm = request.args.get('location')
     
@@ -153,7 +159,16 @@ def show_listings():
 @jwt_required()
 def get_listing(listing_id):
     """Get a specific listing
-    Return { id, name, image, price, description, location }"""
+    Return { id, 
+             name, 
+             address, 
+             image, 
+             price, 
+             description, 
+             location, 
+             created, 
+             rented
+            }"""
 
     listing = Listing.query.get_or_404(listing_id)
 
@@ -161,20 +176,19 @@ def get_listing(listing_id):
 
     return jsonify(listing=serialized)
 
-@app.post('/listings')
+@app.post("/listings")
 @jwt_required()
 def add_listing():
     """Add a new listing to the database
-    Return { listing: 
-                    {   id, 
-                        name, 
-                        address, 
-                        image, price, 
-                        description, 
-                        location, 
-                        created, 
-                        rented
-                    }
+    Return { id, 
+             name, 
+             address, 
+             image, 
+             price, 
+             description, 
+             location, 
+             created, 
+             rented
             }"""
 
     data = request.form
@@ -187,11 +201,11 @@ def add_listing():
     serialized = new_listing.serialize()
     return (jsonify(listing=serialized), 201)
 
-@app.patch('/listings/<int:listing_id>')
+@app.patch("/listings/<int:listing_id>")
 @jwt_required()
 def update_listing(listing_id):
     """Update an existing listing.
-    Return {listing: {id, name, image, price, description, location}}"""
+    Return {id, name, address, image, price, description, location}"""
 
     listing = Listing.query.get_or_404(listing_id)
 
@@ -206,25 +220,29 @@ def update_listing(listing_id):
 
     return jsonify(listing=serialized)
 
-@app.delete('/listings/<int:listing_id>')
+@app.delete("/listings/<int:listing_id>")
 @jwt_required()
 def delete_listing(listing_id):
-    """Delete a listing. Return {deleted: [listing-id]}"""
+    """Delete a listing. Return {deleted: listing-id}"""
 
     listing = Listing.query.get_or_404(listing_id)
 
     db.session.delete(listing)
     db.session.commit()
 
-    return jsonify(deleted=listing_id)
+    return (jsonify(deleted=listing_id), 201)
 
 ##############################################################################
 # Message Routes
 
-@app.post("/message")
+@app.post("/messages")
 @jwt_required()
 def send_message():
-    """Create a message to send to user"""
+    """Create a message to send to user
+        if not the same user: 
+            Return { text, time_sent, to_user, from_user, listing_id} 
+        else 
+            Return { errors: ["Invalid Username"]}"""
 
     curr_user = get_jwt_identity()
 
@@ -241,9 +259,11 @@ def send_message():
 
     return (jsonify(errors=["Invalid Username"]), 404)
 
-@app.get("/message")
+@app.get("/messages")
 @jwt_required()
 def inbox_messages():
+    """Show all or specific messages for to_user
+    Return { message, message, message... }"""
 
     curr_user = get_jwt_identity()
     inbox = Message.retrieve_inbox(curr_user)
@@ -252,7 +272,14 @@ def inbox_messages():
 
     return jsonify(message=serialize)
     
-   
-    
+@app.delete("/messages/<int:message_id>")
+@jwt_required()
+def delete_message(message_id):
+    """Delete a message. Return {deleted: message-id}"""
 
+    message = Message.query.get_or_404(message_id)
 
+    db.session.delete(message)
+    db.session.commit()
+
+    return (jsonify(deleted=message_id), 201)  

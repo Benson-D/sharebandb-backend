@@ -71,13 +71,13 @@ class User(db.Model):
         default=False
     )
 
-    listings_created = db.relationship(
+    created_listing = db.relationship(
         "Listing",
         foreign_keys="Listing.created",
         backref="user_created"
     )
 
-    listings_rented = db.relationship(
+    rented_listing = db.relationship(
         "Listing",
         foreign_keys="Listing.rented",
         backref="user_rented"
@@ -217,7 +217,7 @@ class Listing(db.Model):
         db.ForeignKey('users.username', ondelete='CASCADE'),
     )
 
-    messages_sent = db.relationship('Message',
+    sent_message = db.relationship('Message',
                                     foreign_keys="Message.listing_id",
                                     backref="listing")
 
@@ -285,7 +285,7 @@ class Message(db.Model):
         nullable=False
     )
 
-    sent_time = db.Column(
+    time_sent = db.Column(
         db.DateTime,
         nullable=False,
         default=datetime.utcnow(),
@@ -316,6 +316,7 @@ class Message(db.Model):
 
     @classmethod
     def create_message(cls, data, curr_user):
+        """Create a new message"""
 
         listing = Listing.query.get_or_404(data['listing_id'])
         user = User.query.get_or_404(data['to_user'])
@@ -324,7 +325,7 @@ class Message(db.Model):
 
             new_message = Message(
                 text=data['text'],
-                sent_time=datetime.now(),
+                time_sent=datetime.now(),
                 to_user=user.username,
                 from_user=curr_user,
                 listing_id=listing.id
@@ -336,6 +337,8 @@ class Message(db.Model):
     
     @classmethod
     def retrieve_inbox(cls, curr_user):
+        """Find all messages for to_user"""
+        
         inbox = cls.query.filter(cls.to_user == curr_user).all()
     
         return inbox
@@ -345,7 +348,7 @@ class Message(db.Model):
 
         return {
             "text": self.text,
-            "sent_time": self.sent_time,
+            "time_sent": self.time_sent,
             "to_user": self.to_user,
             "from_user": self.from_user,
             "listing_id": self.listing_id,
