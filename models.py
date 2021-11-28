@@ -314,14 +314,40 @@ class Message(db.Model):
     def __repr__(self):
         return f"""<Message #{self.id}, {self.to_user}, {self.from_user}>"""
 
+    @classmethod
+    def create_message(cls, data, curr_user):
+
+        listing = Listing.query.get_or_404(data['listing_id'])
+        user = User.query.get_or_404(data['to_user'])
+
+        if user.username != curr_user:
+
+            new_message = Message(
+                text=data['text'],
+                sent_time=datetime.now(),
+                to_user=user.username,
+                from_user=curr_user,
+                listing_id=listing.id
+            )
+
+            db.session.add(new_message)
+
+            return new_message 
+    
+    @classmethod
+    def retrieve_inbox(cls, curr_user):
+        inbox = cls.query.filter(cls.to_user == curr_user).all()
+    
+        return inbox
+
     def serialize(self):
         """Serialize Message Object to dictionary"""
 
         return {
             "text": self.text,
-            "from_user": self.from_user,
+            "sent_time": self.sent_time,
             "to_user": self.to_user,
-            "sent_at": self.sent_at,
+            "from_user": self.from_user,
             "listing_id": self.listing_id,
         }
 

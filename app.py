@@ -2,11 +2,11 @@ import os
 
 from flask import Flask, jsonify, request
 from flask_debugtoolbar import DebugToolbarExtension
-from flask_jwt_extended import create_access_token, JWTManager, jwt_required
+from flask_jwt_extended import create_access_token, JWTManager, jwt_required, get_jwt_identity
 
 from sqlalchemy.exc import IntegrityError
 
-from models import db, connect_db, Listing, User
+from models import db, connect_db, User, Listing, Message
 from flask_cors import CORS
 
 import dotenv
@@ -217,3 +217,42 @@ def delete_listing(listing_id):
     db.session.commit()
 
     return jsonify(deleted=listing_id)
+
+##############################################################################
+# Message Routes
+
+@app.post("/message")
+@jwt_required()
+def send_message():
+    """Create a message to send to user"""
+
+    curr_user = get_jwt_identity()
+
+    data = request.json
+
+    new_message = Message.create_message(data, curr_user)
+
+    if new_message:
+
+        db.session.commit()
+        serialize = new_message.serialize()
+
+        return (jsonify(message=serialize), 201)
+
+    return (jsonify(errors=["Invalid Username"]), 404)
+
+@app.get("/message")
+@jwt_required()
+def inbox_messages():
+
+    curr_user = get_jwt_identity()
+    inbox = Message.retrieve_inbox(curr_user)
+
+    serialize = [message.serialize() for message in inbox]
+
+    return jsonify(message=serialize)
+    
+   
+    
+
+
