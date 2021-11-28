@@ -6,7 +6,7 @@ db.drop_all()
 db.create_all()
 
 user_one = User(
-    username="test-user",
+    username="test-admin",
     password="$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q",
     email="test@gmail.com",
     first_name="Test",
@@ -17,7 +17,7 @@ user_one = User(
 )
 
 user_two = User(
-    username="test-user-2",
+    username="test-user",
     password="$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q",
     email="testNew@gmail.com",
     first_name="Test",
