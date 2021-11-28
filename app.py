@@ -9,16 +9,8 @@ from sqlalchemy.exc import IntegrityError
 from models import db, connect_db, Listing, User
 from flask_cors import CORS
 
-import boto3
-
 import dotenv
 dotenv.load_dotenv()
-
-CURR_USER_KEY = "curr_user"
-
-s3 = boto3.client('s3')
-
-BUCKET = os.environ['BUCKET']
 
 app = Flask(__name__)
 CORS(app)

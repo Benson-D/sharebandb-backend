@@ -13,8 +13,6 @@ import boto3
 import dotenv
 dotenv.load_dotenv()
 
-CURR_USER_KEY = "curr_user"
-
 s3 = boto3.client('s3')
 
 BUCKET = os.environ['BUCKET']
